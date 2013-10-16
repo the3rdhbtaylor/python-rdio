@@ -36,6 +36,11 @@ import re
 from datetime import datetime, timedelta
 from dateutil import tz
 
+# For debug purposes
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
+
+
 # Declare some constants and stuff
 
 ROOT_URL = 'http://api.rdio.com/1/'
@@ -116,6 +121,7 @@ methods = {
 TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 UTC = tz.tzutc()
 
+
 # Define API error handling.
 class RdioGenericAPIError(Exception):
     """Handles all other unknown Rdio API errors."""
@@ -125,6 +131,7 @@ class RdioGenericAPIError(Exception):
         self.method   = method
         print "An error occurred: %s." % (
             self.method,)
+
 
 class RdioMissingArgumentError(Exception):
     """Handles exceptions around missing arguments."""
@@ -140,6 +147,7 @@ class RdioMissingArgumentError(Exception):
         return repr("Method %s is missing required argument %s." % (
             self.method, self.argument,))
 
+
 class RdioNotAuthenticatedException(Exception):
     """Handles exceptions around not being logged in."""
 
@@ -152,6 +160,7 @@ class RdioNotAuthenticatedException(Exception):
     def __str__(self):
         return repr("User is not authenticated. %s cannot be called." %
             (self.method,))
+
 
 class RdioInvalidParameterException(Exception):
     """Handles exceptions around invalid parameters being passed in."""
@@ -168,6 +177,7 @@ class RdioInvalidParameterException(Exception):
         return repr("%s is an invalid parameter for %s in method %s." % (
             self.value, self.param, self.method,))
 
+
 # Define objects.
 class JSONBasedObject(object):
     """Describeds a JSON based object (keeps data)."""
@@ -175,6 +185,7 @@ class JSONBasedObject(object):
     def __init__(self, data):
         super(JSONBasedObject, self).__init__()
         self._data = data
+
 
 class RdioObject(JSONBasedObject):
     """Describes common fields a base Rdio object will have."""
@@ -186,6 +197,7 @@ class RdioObject(JSONBasedObject):
         self.icon = data['icon']
         self.base_icon = data['baseIcon']
         self.rdio_type = rdio_types[data['type']]
+
 
 class RdioArtist(RdioObject):
     """Describes an Rdio artist."""
@@ -211,6 +223,7 @@ class RdioArtist(RdioObject):
         if 'count' in data: self.collection_track_count = data['count']
         if 'radioKey' in data: self.radio_key = data['radioKey']
 
+
 class RdioMusicObject(RdioObject):
     """Describes an Rdio music object."""
 
@@ -232,6 +245,7 @@ class RdioMusicObject(RdioObject):
         self.big_icon = None
         if 'bigIcon' in data: self.big_icon = data['bigIcon']
 
+
 class RdioAlbum(RdioMusicObject):
     """Describes an Rdio album."""
 
@@ -251,6 +265,7 @@ class RdioAlbum(RdioMusicObject):
         if 'user_count' in data: self.user_count = data['user_count']
         if 'users' in data: self.users = parse_result_list(data['users'])
         if 'isCompilation' in data: self.is_compilation = data['isCompilation']
+
 
 class RdioTrack(RdioMusicObject):
     """Describes an Rdio track."""
@@ -274,6 +289,7 @@ class RdioTrack(RdioMusicObject):
         if 'playCount' in data: self.play_count = data['playCount']
         if 'isOnCompilation' in data:
             self.is_on_compilation = data['isOnCompilation']
+
 
 class RdioPlaylist(RdioObject):
     """Describes an Rdio playlist."""
@@ -299,6 +315,7 @@ class RdioPlaylist(RdioObject):
             self.tracks = [RdioTrack(x) for x in data['tracks']]
             # Populate track_keys
             self.track_keys = [x.key for x in self.tracks]
+
 
 class RdioUser(RdioObject):
     """Describes an Rdio user."""
@@ -354,18 +371,29 @@ class RdioUser(RdioObject):
     def get_full_name(self):
         return "%s %s" % (self.first_name, self.last_name,)
 
+
 class RdioSearchResult(JSONBasedObject):
     """Describes an Rdio search result and the extra fields it brings."""
 
     def __init__(self, data):
         super(RdioSearchResult, self).__init__(data)
-        self.album_count = data['album_count']
-        self.artist_count = data['artist_count']
-        self.number_results = data['number_results']
-        self.person_count = data['person_count']
-        self.playlist_count = data['playlist_count']
-        self.track_count = data['track_count']
-        self.results = parse_result_list(data['results'])
+        # The following items don't always exist. For now, wrap each in as has_key.
+        # TODO: Generalize all of the "data" keys into attributes
+        if 'album_count' in data:
+            self.album_count = data['album_count']
+        if 'artist_count' in data:
+            self.artist_count = data['artist_count']
+        if 'number_results' in data:
+            self.number_results = data['number_results']
+        if 'person_count' in data:
+            self.person_count = data['person_count']
+        if 'playlist_count' in data:
+            self.playlist_count = data['playlist_count']
+        if 'track_count' in data:
+            self.track_count = data['track_count']
+        if 'results' in data:
+            self.results = parse_result_list(data['results'])
+
 
 class RdioActivityItem(JSONBasedObject):
     """Describes an item in Rdio's history object list."""
@@ -399,6 +427,7 @@ class RdioActivityItem(JSONBasedObject):
             self.comment = data['comment']
             self.subject = self.comment
 
+
 class RdioActivityStream(JSONBasedObject):
     """Describes a stream of history for a user, for public, etc."""
 
@@ -411,6 +440,7 @@ class RdioActivityStream(JSONBasedObject):
             for update in data['updates']:
                 self.updates.append(RdioActivityItem(update))
 
+
 class RdioPlaylistSet(JSONBasedObject):
     """Describes a set of playlists, owned, collaborated, and subscribed."""
 
@@ -419,6 +449,7 @@ class RdioPlaylistSet(JSONBasedObject):
         self.owned_playlists = parse_result_list(data['owned'])
         self.collaborated_playlists = parse_result_list(data['collab'])
         self.subscribed_playlists = parse_result_list(data['subscribed'])
+
 
 class RdioStation(RdioObject):
     """Describes basic fields for an Rdio Recommendation Station."""
@@ -432,6 +463,7 @@ class RdioStation(RdioObject):
         self.tracks = data['tracks']
         self.track_keys = None
         if 'trackKeys' in data: self.track_keys = data['trackKeys']
+
 
 class RdioArtistStation(RdioStation):
     """Describes an artist recommendation station."""
@@ -449,6 +481,7 @@ class RdioArtistStation(RdioStation):
         if 'topSongsKey' in data: self.top_songs_key = data['topSongsKey']
         if 'radioKey' in data: self.radio_key = data['radioKey']
 
+
 class RdioHeavyRotationStation(RdioStation):
     """Describes a user network (or global) heavy rotation station."""
 
@@ -456,12 +489,14 @@ class RdioHeavyRotationStation(RdioStation):
         super(RdioHeavyRotationStation, self).__init__(data)
         self.user = data['user']
 
+
 class RdioHeavyRotationUserStation(RdioStation):
     """Describes a user heavy rotation station."""
 
     def __init__(self, data):
         super(RdioHeavyRotationUserStation, self).__init__(data)
         self.user = data['user']
+
 
 class RdioArtistTopSongsStation(RdioStation):
     """Describes an artist station."""
@@ -479,12 +514,14 @@ class RdioArtistTopSongsStation(RdioStation):
         if 'topSongsKey' in data: self.top_songs_key = data['topSongsKey']
         if 'radioKey' in data: self.radio_key = data['radioKey']
 
+
 class RdioUserCollectionStation(RdioStation):
     """Describes a user collection station."""
 
     def __init__(self, data):
         super(RdioUserCollectionStation, self).__init__(data)
         self.user = data['user']
+
 
 # Here's the big kahuna.
 class Api(object):
@@ -663,7 +700,6 @@ class Api(object):
             'method': methods['add_to_playlist'],
             'playlist': playlist,
             'tracks': ','.join(tracks)}
-        print data
         return self.call_api_authenticated(data)
 
     def create_playlist(self, name, description, tracks, extras=[]):
