@@ -38,6 +38,7 @@ from dateutil import tz
 
 # For debug purposes
 import pprint
+
 pp = pprint.PrettyPrinter(indent=4)
 
 
@@ -67,18 +68,18 @@ rdio_genders = {
     'f': ('female', 'her',),
 }
 rdio_activity_types = {
-    0: ('track added to collection','%s added some music to %s collection.',),
-    1: ('track added to playlist','%s added some music to a playlist.',),
-    3: ('friend added','%s added a friend.',),
-    5: ('user joined','%s joined Rdio.',),
-    6: ('comment added to track','%s commented on a track.',),
-    7: ('comment added to album','%s commented on an album.',),
-    8: ('comment added to artist','%s commented on an artist.',),
-    9: ('comment added to playlist','%s commented on a playlist.',),
+    0: ('track added to collection', '%s added some music to %s collection.',),
+    1: ('track added to playlist', '%s added some music to a playlist.',),
+    3: ('friend added', '%s added a friend.',),
+    5: ('user joined', '%s joined Rdio.',),
+    6: ('comment added to track', '%s commented on a track.',),
+    7: ('comment added to album', '%s commented on an album.',),
+    8: ('comment added to artist', '%s commented on an artist.',),
+    9: ('comment added to playlist', '%s commented on a playlist.',),
     10: ('track added via match collection',
          '%s matched music to %s collection.',),
-    11: ('user subscribed to Rdio','%s subscribed to Rdio.',),
-    12: ('track synced to mobile','%s synced some music to %s mobile app.',),
+    11: ('user subscribed to Rdio', '%s subscribed to Rdio.',),
+    12: ('track synced to mobile', '%s synced some music to %s mobile app.',),
 }
 methods = {
     'add_friend': 'addFriend',
@@ -128,7 +129,7 @@ class RdioGenericAPIError(Exception):
 
     def __init__(self, method):
         super(RdioGenericAPIError, self).__init__()
-        self.method   = method
+        self.method = method
         print "An error occurred: %s." % (
             self.method,)
 
@@ -139,7 +140,7 @@ class RdioMissingArgumentError(Exception):
     def __init__(self, argument, method):
         super(RdioMissingArgumentError, self).__init__()
         self.argument = argument
-        self.method   = method
+        self.method = method
         print "Method %s is missing required argument %s." % (
             self.method, self.argument,)
 
@@ -159,7 +160,7 @@ class RdioNotAuthenticatedException(Exception):
 
     def __str__(self):
         return repr("User is not authenticated. %s cannot be called." %
-            (self.method,))
+                    (self.method,))
 
 
 class RdioInvalidParameterException(Exception):
@@ -167,8 +168,8 @@ class RdioInvalidParameterException(Exception):
 
     def __init__(self, value, param, method):
         super(RdioInvalidParameterException, self).__init__()
-        self.value  = value
-        self.param  = param
+        self.value = value
+        self.param = param
         self.method = method
         print "%s is an invalid parameter for %s in method %s." % (
             self.value, self.param, self.method,)
@@ -351,7 +352,7 @@ class RdioUser(RdioObject):
         if 'trackCount' in data: self.track_count = data['trackCount']
         if 'lastSongPlayTime' in data:
             self.last_song_play_time = datetime.strptime(
-				data['lastSongPlayTime'], TIME_FORMAT).replace(tzinfo=UTC)
+                data['lastSongPlayTime'], TIME_FORMAT).replace(tzinfo=UTC)
         if 'isTrial' in data: self.is_trial = data['isTrial']
         if 'isSubscriber' in data: self.is_subscriber = data['isSubscriber']
         if 'isUnlimited' in data: self.is_unlimited = data['isUnlimited']
@@ -378,7 +379,7 @@ class RdioSearchResult(JSONBasedObject):
     def __init__(self, data):
         super(RdioSearchResult, self).__init__(data)
         # The following items don't always exist. For now, wrap each in as has_key.
-        # TODO: Generalize all of the "data" keys into attributes
+        # TODO: Generalize all of the "data" keys into attributes. This will allow it to respond to API changes better.
         if 'album_count' in data:
             self.album_count = data['album_count']
         if 'artist_count' in data:
@@ -402,14 +403,15 @@ class RdioActivityItem(JSONBasedObject):
         super(RdioActivityItem, self).__init__(data)
         self.owner = RdioUser(data['owner'])
         self.date = datetime.strptime(
-			data['date'], TIME_FORMAT).replace(tzinfo=UTC)
+            data['date'], TIME_FORMAT).replace(tzinfo=UTC)
         self.update_type_id = data['update_type']
         self.update_type = rdio_activity_types[data['update_type']][0]
         self._verbose_type = rdio_activity_types[data['update_type']][1]
-        if self.update_type_id in (0,10,12,):
+        if self.update_type_id in (0, 10, 12,):
             self.verbose_update_type = self._verbose_type % (
                 self.owner.name, self.owner.gender_posessive,)
-        else: self.verbose_update_type = self._verbose_type % self.owner.name
+        else:
+            self.verbose_update_type = self._verbose_type % self.owner.name
         self.albums = []
         self.reviewed_item = None
         self.comment = ''
@@ -548,7 +550,7 @@ class Api(object):
                              access_token_secret=access_token_secret)
 
     def set_credentials(self, consumer_key=None, consumer_secret=None,
-                       access_token_key=None, access_token_secret=None):
+                        access_token_key=None, access_token_secret=None):
         """Sets the consumer_key and _secret for this instance.
 
         Keyword arguments:
@@ -562,18 +564,18 @@ class Api(object):
         # Set our keys and secrets, depending on what was passed in.
         if consumer_key and consumer_secret:
             # Get our consumer object, which is just made of a key and secret
-            self._oauth_consumer     = oauth.Consumer(key=consumer_key,
-                                                      secret=consumer_secret)
+            self._oauth_consumer = oauth.Consumer(key=consumer_key,
+                                                  secret=consumer_secret)
             # Get our client object, which is simply a consumer (un-authed)
-            self._oauth_client       = oauth.Client(self._oauth_consumer)
+            self._oauth_client = oauth.Client(self._oauth_consumer)
         if access_token_key and access_token_secret:
             # Get our token object, which identifies us to the API for the user
             # Note: must check for access token when making authenticated calls
             self._oauth_access_token = oauth.Token(key=access_token_key,
                                                    secret=access_token_secret)
             # Upgrade our client object to talk to the API on the user's behalf
-            self._oauth_client       = oauth.Client(self._oauth_consumer,
-                                                     self._oauth_access_token)
+            self._oauth_client = oauth.Client(self._oauth_consumer,
+                                              self._oauth_access_token)
 
     def get_token_and_login_url(self, oauth_callback='oob'):
         """Gets the oAuth token via the oauth2 library.
@@ -585,8 +587,8 @@ class Api(object):
         data = urllib.urlencode({'oauth_callback': oauth_callback})
         try:
             # Get token and secret from Rdio's authorization endpoint.
-            response, content  = self._oauth_client.request(OAUTH_TOKEN_URL,
-                                                            HTTP_METHOD, data)
+            response, content = self._oauth_client.request(OAUTH_TOKEN_URL,
+                                                           HTTP_METHOD, data)
             # Make a dict out of it! Then, return dict.
             return dict(parse_qsl(content))
         except:
@@ -618,18 +620,18 @@ class Api(object):
             self._oauth_client = oauth.Client(self._oauth_consumer,
                                               self._oauth_request_token)
             # Get our full-blown, shiny new access token.
-            response, content  = self._oauth_client.request(OAUTH_ACCESS_URL,
-                                                    HTTP_METHOD)
-            parsed_content     = dict(parse_qsl(content))
-            token              = parsed_content['oauth_token']
-            token_secret       = parsed_content['oauth_token_secret']
+            response, content = self._oauth_client.request(OAUTH_ACCESS_URL,
+                                                           HTTP_METHOD)
+            parsed_content = dict(parse_qsl(content))
+            token = parsed_content['oauth_token']
+            token_secret = parsed_content['oauth_token_secret']
             # Send our token to our credential handler function.
             self.set_credentials(access_token_key=token,
                                  access_token_secret=token_secret)
             # If the private token was made, return True; else return False.
             if self._oauth_access_token:
                 return {
-                    'oauth_token':    token,
+                    'oauth_token': token,
                     'oauth_token_secret': token_secret}
             else:
                 return None
@@ -645,7 +647,8 @@ class Api(object):
         """
         if not self._oauth_access_token:
             raise RdioNotAuthenticatedException(data['method'])
-        else: return self.call_api(data)
+        else:
+            return self.call_api(data)
 
     def call_api(self, data):
         """Calls the Rdio API. Responsible for handling errors from the API.
@@ -761,9 +764,11 @@ class Api(object):
         data = {'method': methods['find_user']}
 
         if email:
-            if validate_email(email): data['email'] = email
-            else: raise RdioInvalidParameterException(
-                "Invalid email address: %s." % email)
+            if validate_email(email):
+                data['email'] = email
+            else:
+                raise RdioInvalidParameterException(
+                    "Invalid email address: %s." % email)
         if vanity_name: data['vanityName'] = vanity_name
         result = self.call_api(data)
         return RdioUser(result) if result else None
@@ -798,11 +803,13 @@ class Api(object):
         data = {'method': methods['get_activity_stream'], 'user': user}
 
         if scope:
-            if scope in ('user','friends','everyone',):
+            if scope in ('user', 'friends', 'everyone',):
                 data['scope'] = scope
-            else: raise RdioInvalidParameterException(
-                scope, 'scope', 'get_activity_stream')
-        else: raise RdioMissingArgumentError('scope','get_activity_stream')
+            else:
+                raise RdioInvalidParameterException(
+                    scope, 'scope', 'get_activity_stream')
+        else:
+            raise RdioMissingArgumentError('scope', 'get_activity_stream')
         if last_id: data['last_id'] = last_id
         results = self.call_api(data)
         return RdioActivityStream(results) if results else None
@@ -843,8 +850,10 @@ class Api(object):
 
         if user: data['user'] = user
 
-        if user: results = self.call_api(data)
-        else: results = self.call_api_authenticated(data)
+        if user:
+            results = self.call_api(data)
+        else:
+            results = self.call_api_authenticated(data)
         return parse_result_list(results) if results else None
 
     def get_albums_in_collection(self, user=None, start=None, count=None,
@@ -866,13 +875,16 @@ class Api(object):
         if start: data['start'] = start
         if count: data['count'] = count
         if sort:
-            if sort in ('dateAdded','playCount','artist','name',):
+            if sort in ('dateAdded', 'playCount', 'artist', 'name',):
                 data['sort'] = sort
-            else: raise RdioInvalidParameterException(
-                sort, 'sort', 'get_albums_in_collection')
+            else:
+                raise RdioInvalidParameterException(
+                    sort, 'sort', 'get_albums_in_collection')
         if query: data['query'] = query
-        if user: results = self.call_api(data)
-        else: results = self.call_api_authenticated(data)
+        if user:
+            results = self.call_api(data)
+        else:
+            results = self.call_api_authenticated(data)
         return parse_result_list(results) if results else None
 
     def get_artists_in_collection(self, user=None, start=None, count=None,
@@ -896,16 +908,19 @@ class Api(object):
         if sort:
             if sort in ('name',):
                 data['sort'] = sort
-            else: raise RdioInvalidParameterException(
-                sort, 'sort', 'get_artists_in_collection')
+            else:
+                raise RdioInvalidParameterException(
+                    sort, 'sort', 'get_artists_in_collection')
         if query: data['query'] = query
-        if user: results = self.call_api(data)
-        else: results = self.call_api_authenticated(data)
+        if user:
+            results = self.call_api(data)
+        else:
+            results = self.call_api_authenticated(data)
         return parse_result_list(results) if results else None
 
     def get_heavy_rotation(self, user=None, object_type=None, friends=False,
                            limit=None):
-       """Finds the most popular artists or albums for a user, their friends,
+        """Finds the most popular artists or albums for a user, their friends,
        or the whole site.
 
        Keyword arguments:
@@ -917,18 +932,19 @@ class Api(object):
        limit       -- optional. The maximum number of results to return.
 
        """
-       data = {'method': methods['get_heavy_rotation']}
+        data = {'method': methods['get_heavy_rotation']}
 
-       if user: data['user'] = user
-       if object_type:
-           if object_type in ('artists','albums',):
-               data['type'] = object_type
-           else: raise RdioInvalidParameterException(
-               object_type, 'type', 'get_heavy_rotation')
-       if friends: data['friends'] = friends
-       if limit: data['limit'] = limit
-       results = self.call_api(data)
-       return parse_result_list(results) if results else None
+        if user: data['user'] = user
+        if object_type:
+            if object_type in ('artists', 'albums',):
+                data['type'] = object_type
+            else:
+                raise RdioInvalidParameterException(
+                    object_type, 'type', 'get_heavy_rotation')
+        if friends: data['friends'] = friends
+        if limit: data['limit'] = limit
+        results = self.call_api(data)
+        return parse_result_list(results) if results else None
 
     def get_new_releases(self, time=None, start=None, count=False,
                          extras=[]):
@@ -945,10 +961,11 @@ class Api(object):
         data = {'method': methods['get_new_releases']}
 
         if time:
-            if time in ('thisweek','lastweek','twoweeks',):
+            if time in ('thisweek', 'lastweek', 'twoweeks',):
                 data['time'] = time
-            else: raise RdioInvalidParameterException(
-                time, 'time', 'get_new_releases')
+            else:
+                raise RdioInvalidParameterException(
+                    time, 'time', 'get_new_releases')
         if start: data['start'] = start
         if count: data['count'] = count
         if extras: data['extras'] = ','.join(extras)
@@ -1022,10 +1039,11 @@ class Api(object):
         """
         data = {'method': methods['get_top_charts']}
 
-        if result_type in ('Artist','Album','Track','Playlist',):
+        if result_type in ('Artist', 'Album', 'Track', 'Playlist',):
             data['type'] = result_type
-        else: raise RdioInvalidParameterException(
-            result_type, 'result_type', 'get_top_charts')
+        else:
+            raise RdioInvalidParameterException(
+                result_type, 'result_type', 'get_top_charts')
         if start: data['start'] = start
         if count: data['count'] = count
         if extras: data['extras'] = ','.join(extras)
@@ -1110,10 +1128,11 @@ class Api(object):
         if start: data['start'] = start
         if count: data['count'] = count
         if sort:
-            if sort in ('dateAdded','playCount','artist','album','name',):
+            if sort in ('dateAdded', 'playCount', 'artist', 'album', 'name',):
                 data['sort'] = sort
-            else: raise RdioInvalidParameterException(
-                sort, 'sort', 'get_tracks_in_collection')
+            else:
+                raise RdioInvalidParameterException(
+                    sort, 'sort', 'get_tracks_in_collection')
         if query: data['query'] = query
         results = self.call_api(data)
         return parse_result_list(results) if results else None
