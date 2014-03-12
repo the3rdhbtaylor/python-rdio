@@ -36,12 +36,6 @@ import re
 from datetime import datetime, timedelta
 from dateutil import tz
 
-# For debug purposes
-import pprint
-
-pp = pprint.PrettyPrinter(indent=4)
-
-
 # Declare some constants and stuff
 
 ROOT_URL = 'http://api.rdio.com/1/'
@@ -81,6 +75,8 @@ rdio_activity_types = {
     11: ('user subscribed to Rdio', '%s subscribed to Rdio.',),
     12: ('track synced to mobile', '%s synced some music to %s mobile app.',),
 }
+
+# TODO: All this seems to do is map "some_thing" to "someThing". Any alternative?
 methods = {
     'add_friend': 'addFriend',
     'add_to_collection': 'addToCollection',
@@ -657,9 +653,19 @@ class Api(object):
         data -- the dictionary of data for the call, including 'method' param.
 
         """
+        """
+            HBT: We are seeing errors from the Rdio API. I'm not sure if it is
+            returning an uncaught error, or if the returned information is
+            garbage in some way. Let's insert some temporary debug code to see what
+            we get for the failed responses.
+        """
         data = urllib.urlencode(data)
+        print('HBT: Rdio call_api debug dumps:')
+        print('Encoded data: %s' % data)
         response, content = self._oauth_client.request(ROOT_URL,
                                                        HTTP_METHOD, data)
+        print('Response to request: %s' % response)
+        print('Content from request: %s' % content)
         parsed_content = json.loads(content)
         status = parsed_content['status']
         if status == 'error':
